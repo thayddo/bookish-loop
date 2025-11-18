@@ -1,105 +1,109 @@
-import Database from 'better-sqlite3';
-import { randomUUID } from 'node:crypto';
-import { Book, Customer } from './types.js';
+import { neon } from "@neondatabase/serverless";
+import dotenv from "dotenv";
 
-const dbFile = process.env.DATABASE_URL || './data.sqlite';
-export const db = new Database(dbFile);
+dotenv.config();
 
-// Enable FK and WAL
-db.pragma('foreign_keys = ON');
-db.pragma('journal_mode = WAL');
+const sql = neon(process.env.DATABASE_URL!);
 
-// Create tables if not exist
-db.exec(`
-CREATE TABLE IF NOT EXISTS books (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  author TEXT NOT NULL,
-  price REAL NOT NULL,
-  condition TEXT NOT NULL CHECK (condition IN ('novo','seminovo','usado')),
-  stock INTEGER NOT NULL DEFAULT 0,
-  isbn TEXT,
-  image_url TEXT,
-  description TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS customers (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  phone TEXT,
-  created_at TEXT NOT NULL
-);
-`);
-
-// Repository helpers
 export const repo = {
-  // BOOKS
-  listBooks(params: { search?: string; min?: number; max?: number; condition?: string; limit?: number; offset?: number }) {
-    const clauses: string[] = [];
-    const args: any[] = [];
-    if (params.search) {
-      clauses.push("(title LIKE ? OR author LIKE ? OR isbn LIKE ?)");
-      const like = `%${params.search}%`;
-      args.push(like, like, like);
-    }
-    if (typeof params.min === 'number') { clauses.push("price >= ?"); args.push(params.min); }
-    if (typeof params.max === 'number') { clauses.push("price <= ?"); args.push(params.max); }
-    if (params.condition) { clauses.push("condition = ?"); args.push(params.condition); }
-    const where = clauses.length ? ("WHERE " + clauses.join(" AND ")) : "";
-    const limit = Math.min(params.limit ?? 50, 100);
-    const offset = Math.max(params.offset ?? 0, 0);
-    const stmt = db.prepare(`SELECT * FROM books ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`);
-    return stmt.all(...args, limit, offset) as Book[];
+  // ======================================
+  // 👤 USUÁRIOS
+  // ======================================
+  async getUserByEmail(email: string) {
+    const result = await sql`SELECT * FROM usuarios WHERE email = ${email}`;
+    return result[0] || null;
   },
 
-  getBook(id: string) {
-    const stmt = db.prepare(`SELECT * FROM books WHERE id = ?`);
-    return stmt.get(id) as Book | undefined;
+  async createUser({ nome, email, senha_hash, telefone, tipo_usuario }: any) {
+    const result = await sql`
+      INSERT INTO usuarios (nome, email, senha_hash, telefone, tipo_usuario)
+      VALUES (${nome}, ${email}, ${senha_hash}, ${telefone}, ${tipo_usuario})
+      RETURNING *;
+    `;
+    return result[0];
   },
 
-  createBook(data: Omit<Book, 'id'|'created_at'|'updated_at'>) {
-    const id = randomUUID();
-    const now = new Date().toISOString();
-    const stmt = db.prepare(`INSERT INTO books (id,title,author,price,condition,stock,isbn,image_url,description,created_at,updated_at)
-                             VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
-    stmt.run(id, data.title, data.author, data.price, data.condition, data.stock, data.isbn ?? null, data.image_url ?? null, data.description ?? null, now, now);
-    return this.getBook(id)!;
+  // ======================================
+  // 📚 LIVROS
+  // ======================================
+  async listBooks() {
+    const result = await sql`SELECT * FROM livros ORDER BY id DESC`;
+    return result;
   },
 
-  updateBook(id: string, patch: Partial<Omit<Book,'id'|'created_at'>>) {
-    const current = this.getBook(id);
-    if (!current) return undefined;
-    const merged = { ...current, ...patch, updated_at: new Date().toISOString() };
-    const stmt = db.prepare(`UPDATE books SET title=?,author=?,price=?,condition=?,stock=?,isbn=?,image_url=?,description=?,updated_at=? WHERE id=?`);
-    stmt.run(merged.title, merged.author, merged.price, merged.condition, merged.stock, merged.isbn ?? null, merged.image_url ?? null, merged.description ?? null, merged.updated_at, id);
-    return this.getBook(id)!;
+  async getBook(id: number) {
+    const result = await sql`SELECT * FROM livros WHERE id = ${id}`;
+    return result[0] || null;
   },
 
-  deleteBook(id: string) {
-    const stmt = db.prepare(`DELETE FROM books WHERE id = ?`);
-    const info = stmt.run(id);
-    return info.changes > 0;
+  async createBook({ titulo, autor, preco, estoque, descricao, categoria_id }: any) {
+    const result = await sql`
+      INSERT INTO livros (titulo, autor, preco, estoque, descricao, categoria_id)
+      VALUES (${titulo}, ${autor}, ${preco}, ${estoque}, ${descricao}, ${categoria_id})
+      RETURNING *;
+    `;
+    return result[0];
   },
 
-  // CUSTOMERS
-  listCustomers(limit = 100, offset = 0) {
-    const stmt = db.prepare(`SELECT * FROM customers ORDER BY created_at DESC LIMIT ? OFFSET ?`);
-    return stmt.all(limit, offset) as Customer[];
+  async updateBook(id: number, { titulo, autor, preco, estoque, descricao, categoria_id }: any) {
+    const result = await sql`
+      UPDATE livros
+      SET titulo = ${titulo},
+          autor = ${autor},
+          preco = ${preco},
+          estoque = ${estoque},
+          descricao = ${descricao},
+          categoria_id = ${categoria_id}
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+    return result[0] || null;
   },
 
-  createCustomer(data: Omit<Customer, 'id'|'created_at'>) {
-    const id = randomUUID();
-    const now = new Date().toISOString();
-    const stmt = db.prepare(`INSERT INTO customers (id,name,email,phone,created_at) VALUES (?,?,?,?,?)`);
-    stmt.run(id, data.name, data.email, data.phone ?? null, now);
-    return this.getCustomer(id)!;
+  async deleteBook(id: number) {
+    const result = await sql`DELETE FROM livros WHERE id = ${id} RETURNING id;`;
+    return result.length > 0;
   },
 
-  getCustomer(id: string) {
-    const stmt = db.prepare(`SELECT * FROM customers WHERE id = ?`);
-    return stmt.get(id) as Customer | undefined;
-  }
+  // ======================================
+  // 🧾 CLIENTES
+  // ======================================
+  async listCustomers(limit = 100, offset = 0) {
+    const result = await sql`
+      SELECT * FROM clientes
+      ORDER BY id DESC
+      LIMIT ${limit} OFFSET ${offset};
+    `;
+    return result;
+  },
+
+  async createCustomer({ nome, email, telefone, endereco_id }: any) {
+    const result = await sql`
+      INSERT INTO clientes (nome, email, telefone, endereco_id)
+      VALUES (${nome}, ${email}, ${telefone}, ${endereco_id})
+      RETURNING *;
+    `;
+    return result[0];
+  },
+
+  // ======================================
+  // 📦 PEDIDOS
+  // ======================================
+  async createPedido(usuario_id: number, endereco_id: number, valor_total: number) {
+    const result = await sql`
+      INSERT INTO pedidos (usuario_id, endereco_id, valor_total)
+      VALUES (${usuario_id}, ${endereco_id}, ${valor_total})
+      RETURNING *;
+    `;
+    return result[0];
+  },
+
+  async listPedidosByUser(usuario_id: number) {
+    const result = await sql`
+      SELECT * FROM pedidos
+      WHERE usuario_id = ${usuario_id}
+      ORDER BY criado_em DESC;
+    `;
+    return result;
+  },
 };

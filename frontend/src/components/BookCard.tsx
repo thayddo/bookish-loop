@@ -2,14 +2,13 @@ import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/context/CartContext"; 
 
 interface BookCardProps {
-  id: string;
   title: string;
   author: string;
-  publisher: string;
-  price: number;
-  originalPrice?: number;
+  price: string;
+  originalPrice?: string;
   condition: string;
   imageUrl: string;
   isFavorite?: boolean;
@@ -18,13 +17,23 @@ interface BookCardProps {
 const BookCard = ({
   title,
   author,
-  publisher,
   price,
   originalPrice,
   condition,
   imageUrl,
   isFavorite = false,
 }: BookCardProps) => {
+  const { addToCart } = useCart();
+  const handleAddToCart = () => {
+    addToCart({
+      id: "6", 
+      title,
+      author,
+      price: parseFloat(price),
+      imageUrl,
+      image: imageUrl
+    });
+  };
   return (
     <Card className="group overflow-hidden hover:shadow-hover transition-all duration-300 border-border bg-card">
       <div className="relative overflow-hidden aspect-[3/4] bg-secondary">
@@ -52,23 +61,27 @@ const BookCard = ({
           {title}
         </h3>
         <p className="text-sm text-muted-foreground mb-1">{author}</p>
-        <p className="text-xs text-muted-foreground">{publisher}</p>
+        {/**<p className="text-xs text-muted-foreground">{publisher}</p>**/}
       </CardContent>
 
       <CardFooter className="p-4 pt-0 flex items-center justify-between">
         <div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-primary">
-              R$ {price.toFixed(2)}
+              R$ {price}
             </span>
           </div>
           {originalPrice && (
             <span className="text-xs text-muted-foreground line-through">
-              R$ {originalPrice.toFixed(2)}
+              R$ {originalPrice}
             </span>
           )}
         </div>
-        <Button size="icon" className="bg-accent hover:bg-accent/90">
+        <Button 
+          size="icon"
+          className="bg-accent hover:bg-accent/90"
+          aria-label="Adicionar ao carrinho"
+          onClick={() => handleAddToCart()}>
           <ShoppingCart className="h-4 w-4" />
         </Button>
       </CardFooter>

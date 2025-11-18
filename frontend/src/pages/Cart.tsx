@@ -16,9 +16,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
+import { useCart } from "@/context/CartContext";
 
 interface CartItem {
-  id: number;
+  id: string;
   title: string;
   author: string;
   price: number;
@@ -28,48 +29,9 @@ interface CartItem {
 }
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      title: "O Senhor dos Anéis",
-      author: "J.R.R. Tolkien",
-      price: 45.90,
-      quantity: 1,
-      image: "/src/assets/book1.jpg",
-      condition: "Muito Bom"
-    },
-    {
-      id: 2,
-      title: "1984",
-      author: "George Orwell",
-      price: 32.50,
-      quantity: 2,
-      image: "/src/assets/book2.jpg",
-      condition: "Bom"
-    }
-  ]);
-
+  const { cartItems, updateQuantity, removeItem, clearCart } = useCart(); 
   const [showCheckout, setShowCheckout] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  const updateQuantity = (id: number, delta: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
-  };
-
-  const removeItem = (id: number) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-    toast({
-      title: "Item removido",
-      description: "O livro foi removido do carrinho.",
-    });
-  };
-
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shipping = subtotal > 100 ? 0 : 12.90;
   const total = subtotal + shipping;
@@ -82,7 +44,6 @@ const Cart = () => {
     setShowCheckout(false);
     setShowSuccess(true);
     setTimeout(() => {
-      setCartItems([]);
       setShowSuccess(false);
       toast({
         title: "Compra finalizada! 🎉",

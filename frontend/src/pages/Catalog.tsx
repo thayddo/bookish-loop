@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCard from "@/components/BookCard";
@@ -7,80 +7,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Filter } from "lucide-react";
 
-import book1 from "@/assets/book1.jpg";
-import book2 from "@/assets/book2.jpg";
-import book3 from "@/assets/book3.jpg";
-import book4 from "@/assets/book4.jpg";
-import book5 from "@/assets/book5.jpg";
-import book6 from "@/assets/book6.jpg";
-
-const books = [
-  {
-    id: "1",
-    title: "O Senhor dos Anéis: A Sociedade do Anel",
-    author: "J.R.R. Tolkien",
-    publisher: "Martins Fontes",
-    price: 45.90,
-    originalPrice: 89.90,
-    condition: "Ótimo Estado",
-    imageUrl: book1,
-  },
-  {
-    id: "2",
-    title: "1984",
-    author: "George Orwell",
-    publisher: "Companhia das Letras",
-    price: 35.90,
-    originalPrice: 59.90,
-    condition: "Bom Estado",
-    imageUrl: book2,
-  },
-  {
-    id: "3",
-    title: "Cem Anos de Solidão",
-    author: "Gabriel García Márquez",
-    publisher: "Record",
-    price: 42.90,
-    originalPrice: 79.90,
-    condition: "Ótimo Estado",
-    imageUrl: book3,
-  },
-  {
-    id: "4",
-    title: "A Menina que Roubava Livros",
-    author: "Markus Zusak",
-    publisher: "Intrínseca",
-    price: 38.90,
-    originalPrice: 64.90,
-    condition: "Ótimo Estado",
-    imageUrl: book4,
-  },
-  {
-    id: "5",
-    title: "O Pequeno Príncipe",
-    author: "Antoine de Saint-Exupéry",
-    publisher: "Agir",
-    price: 28.90,
-    originalPrice: 49.90,
-    condition: "Bom Estado",
-    imageUrl: book5,
-  },
-  {
-    id: "6",
-    title: "Dom Casmurro",
-    author: "Machado de Assis",
-    publisher: "Penguin Companhia",
-    price: 32.90,
-    originalPrice: 54.90,
-    condition: "Ótimo Estado",
-    imageUrl: book6,
-  },
-];
+interface Book {
+  id: number;
+  titulo: string;
+  autor: string;
+  descricao: string;
+  valor: string;
+  estoque: number;
+  imagem_url: string;
+  isbn?: string;
+  data_cadastro?: string;
+  //editora?: string; // caso exista no banco
+}
 
 const Catalog = () => {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [showFilters, setShowFilters] = useState(false);
 
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/books");
+        const data = await response.json();
+        setBooks(data);
+      } catch (error) {
+        console.error("Erro ao carregar livros:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -158,7 +118,16 @@ const Catalog = () => {
         {/* Books Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
           {books.map((book) => (
-            <BookCard key={book.id} {...book} />
+            <BookCard
+              key={book.id}
+              title={book.titulo}
+              author={book.autor}
+              //publisher={book.editora ?? "Editora não informada"}
+              price={book.valor}
+              imageUrl={book.imagem_url}
+              condition="Ótimo Estado"
+              isFavorite={false}
+            />
           ))}
         </div>
       </main>
