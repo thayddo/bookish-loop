@@ -11,6 +11,7 @@ import Admin from "./pages/Admin";
 import AdminReports from "./pages/AdminReports";
 import AdminInventory from "./pages/AdminInventory";
 import NotFound from "./pages/NotFound";
+import Favorits from "./pages/Favorits";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/favorits" element={<Favorits />} />
           <Route path="/admin" element={<Admin />}>
             <Route path="reports" element={<AdminReports />} />
             <Route path="inventory" element={<AdminInventory />} />

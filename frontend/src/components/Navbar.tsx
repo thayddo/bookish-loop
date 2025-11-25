@@ -3,10 +3,25 @@ import { Link } from "react-router-dom";
 import { BookOpen, Search, Heart, ShoppingCart, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
+
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { cartItems } = useCart();
+  const totalExemplares = cartItems.reduce(
+    (sum, item) => sum + item.quantity, 
+    0
+  );
+
+  const { favorites } = useFavorites();
+  const totalFavoritos = favorites.reduce(
+    (sum, item) => sum + 1, 
+    0
+  );
 
   return (
     <nav className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border shadow-soft">
@@ -48,11 +63,11 @@ const Navbar = () => {
                 Admin
               </Button>
             </Link>
-            <Link to="/favorites">
+            <Link to="/favorits">
               <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  0
+                    {totalFavoritos}
                 </span>
               </Button>
             </Link>
@@ -60,7 +75,7 @@ const Navbar = () => {
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  0
+                   {totalExemplares}
                 </span>
               </Button>
             </Link>

@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Filter } from "lucide-react";
 
 interface Book {
-  id: number;
+  id: String;
   titulo: string;
   autor: string;
   descricao: string;
@@ -119,7 +119,8 @@ const Catalog = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
           {books.map((book) => (
             <BookCard
-              key={book.id}
+              id={book.id.toString()}
+              key={book.id.toString()}
               title={book.titulo}
               author={book.autor}
               //publisher={book.editora ?? "Editora não informada"}

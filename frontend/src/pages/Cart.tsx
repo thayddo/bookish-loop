@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, Plus, Minus, ShoppingBag, CreditCard } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useCart } from "@/context/CartContext";
+import { getAuthUser } from "@/services/userService";
 
 interface CartItem {
   id: string;
@@ -29,20 +30,42 @@ interface CartItem {
 }
 
 const Cart = () => {
-  const { cartItems, updateQuantity, removeItem, clearCart } = useCart(); 
+  const { cartItems, updateQuantity, removeItem } = useCart();
+
   const [showCheckout, setShowCheckout] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const [user, setUser] = useState<any>(null);
+  const [showLoginWarning, setShowLoginWarning] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const data = await getAuthUser();
+        setUser(data);
+      } catch {
+        setUser(null);
+      }
+    };
+    loadUser();
+  }, []);
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shipping = subtotal > 100 ? 0 : 12.90;
   const total = subtotal + shipping;
 
   const handleCheckout = () => {
+    if (!user) {
+      setShowLoginWarning(true);
+      return;
+    }
     setShowCheckout(true);
   };
 
   const handlePayment = () => {
     setShowCheckout(false);
     setShowSuccess(true);
+
     setTimeout(() => {
       setShowSuccess(false);
       toast({
@@ -80,7 +103,8 @@ const Cart = () => {
         <h1 className="text-4xl font-serif font-bold mb-8">Meu Carrinho</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
+
+          {/* Cart items */}
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map(item => (
               <Card key={item.id}>
@@ -91,6 +115,7 @@ const Cart = () => {
                       alt={item.title}
                       className="w-24 h-32 object-cover rounded"
                     />
+
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
                         <div>
@@ -100,6 +125,7 @@ const Cart = () => {
                             Condição: {item.condition}
                           </p>
                         </div>
+
                         <Button
                           variant="ghost"
                           size="icon"
@@ -118,7 +144,9 @@ const Cart = () => {
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
+
                           <span className="w-8 text-center font-medium">{item.quantity}</span>
+
                           <Button
                             variant="outline"
                             size="icon"
@@ -127,6 +155,7 @@ const Cart = () => {
                             <Plus className="w-4 h-4" />
                           </Button>
                         </div>
+
                         <p className="text-xl font-bold text-primary">
                           R$ {(item.price * item.quantity).toFixed(2)}
                         </p>
@@ -138,38 +167,46 @@ const Cart = () => {
             ))}
           </div>
 
-          {/* Order Summary */}
+          {/* Order summary */}
           <div>
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle>Resumo do Pedido</CardTitle>
               </CardHeader>
+
               <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} itens)</span>
+                  <span className="text-muted-foreground">
+                    Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} itens)
+                  </span>
                   <span>R$ {subtotal.toFixed(2)}</span>
                 </div>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
                   <span>{shipping === 0 ? "Grátis" : `R$ ${shipping.toFixed(2)}`}</span>
                 </div>
+
                 {shipping === 0 && (
-                  <p className="text-xs text-green-600">
-                    🎉 Você ganhou frete grátis!
-                  </p>
+                  <p className="text-xs text-green-600">🎉 Você ganhou frete grátis!</p>
                 )}
+
                 {subtotal < 100 && subtotal > 0 && (
                   <p className="text-xs text-muted-foreground">
                     Faltam R$ {(100 - subtotal).toFixed(2)} para frete grátis
                   </p>
                 )}
+
                 <Separator />
+
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-primary">R$ {total.toFixed(2)}</span>
                 </div>
               </CardContent>
+
               <CardFooter>
+                {/* 🔥 Correção aplicada */}
                 <Button className="w-full" size="lg" onClick={handleCheckout}>
                   <CreditCard className="w-4 h-4 mr-2" />
                   Finalizar Compra
@@ -188,7 +225,7 @@ const Cart = () => {
         </div>
       </main>
 
-      {/* Checkout Dialog */}
+      {/* Checkout dialog */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -197,6 +234,7 @@ const Cart = () => {
               Escaneie o QR Code para realizar o pagamento via PIX
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-6 py-4">
             <div className="bg-white p-8 rounded-lg flex justify-center">
               <div className="w-48 h-48 bg-gray-900 rounded-lg flex items-center justify-center">
@@ -206,7 +244,7 @@ const Cart = () => {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="pix-code">Código PIX (Copia e Cola)</Label>
               <Input
@@ -224,19 +262,19 @@ const Cart = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Success Dialog */}
+      {/* Success dialog */}
       <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
         <DialogContent className="max-w-md text-center">
           <DialogHeader>
             <DialogTitle className="text-2xl">Pagamento Confirmado! 🎉</DialogTitle>
-            <DialogDescription>
-              Seu pedido foi processado com sucesso
-            </DialogDescription>
+            <DialogDescription>Seu pedido foi processado com sucesso</DialogDescription>
           </DialogHeader>
+
           <div className="py-6">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBag className="w-10 h-10 text-green-600" />
             </div>
+
             <p className="text-sm text-muted-foreground">
               A nota fiscal será enviada para seu e-mail em instantes.
             </p>

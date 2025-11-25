@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/CartContext"; 
+import { useFavorites } from "@/context/FavoritesContext";
 
 interface BookCardProps {
+  id: string;
   title: string;
   author: string;
   price: string;
@@ -15,6 +17,7 @@ interface BookCardProps {
 }
 
 const BookCard = ({
+  id,
   title,
   author,
   price,
@@ -26,14 +29,28 @@ const BookCard = ({
   const { addToCart } = useCart();
   const handleAddToCart = () => {
     addToCart({
-      id: "6", 
+      id,                 // <-- DINÂMICO
       title,
       author,
       price: parseFloat(price),
+      condition,
       imageUrl,
       image: imageUrl
     });
   };
+  const { favorites, toggleFavorite } = useFavorites();
+  const isFavoriteBook = favorites.some((f) => f.id === id);
+
+  const handleToggleFavorite = () => {
+    toggleFavorite({
+      id,
+      title,
+      author,
+      imageUrl,
+      condition,
+      price: parseFloat(price),
+    });
+};
   return (
     <Card className="group overflow-hidden hover:shadow-hover transition-all duration-300 border-border bg-card">
       <div className="relative overflow-hidden aspect-[3/4] bg-secondary">
@@ -45,11 +62,17 @@ const BookCard = ({
         <Button
           size="icon"
           variant="secondary"
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground"
+          className="absolute top-3 right-3 opacity-0
+            group-hover:opacity-100
+            transition-opacity bg-card/90 
+            backdrop-blur-sm hover:bg-accent 
+            hover:text-accent-foreground"
+           onClick={() => handleToggleFavorite()} 
         >
           <Heart
-            className={`h-4 w-4 ${isFavorite ? "fill-accent text-accent" : ""}`}
-          />
+            className={`h-4 w-4 transition-all duration-200 ${
+              isFavoriteBook ? "fill-accent text-accent" : "text-muted-foreground"
+            }`}/>
         </Button>
         <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
           {condition}
@@ -87,6 +110,5 @@ const BookCard = ({
       </CardFooter>
     </Card>
   );
-};
-
+  };
 export default BookCard;

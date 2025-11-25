@@ -26,26 +26,47 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   // Adiciona item (ou aumenta quantidade se já existe)
-  const addToCart = (newItem: Omit<CartItem, "quantity">) => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === newItem.id);
+  // const addToCart = (newItem: Omit<CartItem, "quantity">) => {
+  //   setCartItems((prev) => {
+  //     const existing = prev.find((item) => item.id === newItem.id);
 
-      if (existing) {
-        toast({
-          title: "Quantidade atualizada",
-          description: `${newItem.title} já estava no carrinho. Quantidade incrementada.`,
-        });
+  //     if (existing) {
+  //       toast({
+  //         title: "Quantidade atualizada",
+  //         description: `${newItem.title} já estava no carrinho. Quantidade incrementada.`,
+  //       });
+  //       return prev.map((item) =>
+  //         item.id === newItem.id ? { ...item, quantity: item.quantity + 1 } : item
+  //       );
+  //     }
+
+  //     toast({
+  //       title: "Livro adicionado 🛒",
+  //       description: `${newItem.title} foi adicionado ao carrinho.`,
+  //     });
+
+  //     return [...prev, { ...newItem, quantity: 1 }];
+  //   });
+  // };
+
+    const addToCart = (book) => {
+    setCartItems((prev) => {
+      const exists = prev.find((item) => item.id === book.id);
+
+      if (exists) {
         return prev.map((item) =>
-          item.id === newItem.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === book.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
       }
 
       toast({
         title: "Livro adicionado 🛒",
-        description: `${newItem.title} foi adicionado ao carrinho.`,
+        description: `${book.title} foi adicionado ao carrinho.`,
       });
 
-      return [...prev, { ...newItem, quantity: 1 }];
+      return [...prev, { ...book, quantity: 1 }];
     });
   };
 
